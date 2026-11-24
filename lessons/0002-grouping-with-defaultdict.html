@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lesson 2: Grouping with defaultdict</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body><main>
+<div class="kicker">Python Collections · Lesson 2</div>
+<h1>Grouping with <code>defaultdict</code></h1>
+<p class="lede">Mission link: grouping rows by a key (images by label, orders by customer) is daily bread in data work. Today's win: group without a single <code>if key in d</code>, and know exactly where <code>defaultdict</code> surprises people.</p>
+<p>Builds on <a href="0001-counting-with-counter.html">Lesson 1: Counter</a>. Recall first: does reading <code>Counter()['z']</code> add <code>'z'</code>? (No.) Keep that in mind: <code>defaultdict</code> behaves differently.</p>
+
+<h2>1. The problem you already know</h2>
+<pre><code>groups = {}
+for label, path in rows:
+    if label not in groups:
+        groups[label] = []
+    groups[label].append(path)</code></pre>
+<p>The <code>if</code> exists only to avoid a <code>KeyError</code>. <code>defaultdict</code> removes it.</p>
+
+<h2>2. The knowledge</h2>
+<p>The docs call <code>defaultdict</code> a <em>"dict subclass that calls a factory function to supply missing values"</em> (<a href="https://docs.python.org/3/library/collections.html#defaultdict-objects">docs</a>). You pass the factory when you create it:</p>
+<pre><code>from collections import defaultdict
+
+rows = [('cat', 'a.jpg'), ('dog', 'b.jpg'), ('cat', 'c.jpg')]
+
+groups = defaultdict(list)       # default_factory = list
+for label, path in rows:
+    groups[label].append(path)   # no "if label in groups" needed
+
+groups   # defaultdict(list, {'cat': ['a.jpg', 'c.jpg'], 'dog': ['b.jpg']})</code></pre>
+<p>When you read a missing key, the docs say <code>default_factory</code> "is called without arguments to provide a default value for the given key, this value is inserted in the dictionary for the key, and returned."</p>
+
+<h3>Common factories</h3>
+<pre><code>defaultdict(list)   # group items          d[k].append(x)
+defaultdict(int)    # count, starts at 0   d[k] += 1
+defaultdict(set)    # group unique items   d[k].add(x)</code></pre>
+
+<h3>Nesting</h3>
+<pre><code>nested = defaultdict(lambda: defaultdict(int))
+nested['x']['y'] += 1
+nested   # {'x': {'y': 1}}</code></pre>
+<p>A <code>lambda</code> is how you build a factory that needs more than a bare type.</p>
+
+<h2>3. Practice: recall</h2>
+<div class="quiz" data-answer="0" data-explain="The factory result is inserted, then returned.">
+<p class="q">With <code>d = defaultdict(list)</code>, what does reading <code>d['missing']</code> do?</p>
+<button>Inserts then returns []</button><button>Raises KeyError and stops</button><button>Returns None, inserts nothing</button><button>Returns [] without inserting</button></div>
+
+<div class="quiz" data-answer="2" data-explain="get() bypasses the factory, so it behaves like a normal dict.">
+<p class="q">With <code>d = defaultdict(list)</code>, what does <code>d.get('missing')</code> return?</p>
+<button>An empty list</button><button>Raises a KeyError</button><button>The value None</button><button>The integer zero</button></div>
+
+<div class="quiz" data-answer="1" data-explain="int() returns 0, so every new key starts at zero.">
+<p class="q">Which line makes every new key start at zero?</p>
+<button>defaultdict(list)</button><button>defaultdict(int)</button><button>defaultdict(set)</button><button>defaultdict(str)</button></div>
+
+<h2>4. Misconceptions and pitfalls</h2>
+<p>I ran each example below to confirm it.</p>
+
+<div class="pitfall"><p class="think">You might think</p>
+<p>Reading a key is harmless, so <code>d['x']</code> is a safe way to peek.</p>
+<p><strong>Actually:</strong> every read of a missing key <em>inserts</em> it. Peeking pollutes the dict.</p>
+<pre><code>d = defaultdict(list)
+d['m']          # []
+d               # defaultdict(list, {'m': []})   (m is now a key)</code></pre></div>
+
+<div class="pitfall"><p class="think">You might think</p>
+<p><code>key in d</code> and <code>d.get(key)</code> also trigger the factory.</p>
+<p><strong>Actually:</strong> only <code>d[key]</code> does. The safe ways to peek are <code>in</code> and <code>get()</code>.</p>
+<pre><code>d = defaultdict(list); d['m']
+'x' in d        # False   (nothing inserted)
+d.get('y')      # None    (factory bypassed, nothing inserted)
+d               # defaultdict(list, {'m': []})</code></pre></div>
+
+<div class="pitfall"><p class="think">You might think</p>
+<p>You pass the default <em>value</em>: <code>defaultdict(0)</code> or <code>defaultdict([])</code>.</p>
+<p><strong>Actually:</strong> you pass a <em>callable</em> that makes the value. Both lines raise <code>TypeError: first argument must be callable or None</code>. Use <code>int</code>, <code>list</code>, or <code>lambda: 0</code>.</p>
+<pre><code>defaultdict(int)         # ok, int() is 0
+defaultdict(lambda: 0)   # ok
+defaultdict(0)           # TypeError
+defaultdict([])          # TypeError</code></pre>
+<p>Passing a callable also means each missing key gets its <em>own</em> fresh list, not one shared list.</p></div>
+
+<div class="pitfall"><p class="think">You might think</p>
+<p>A typo in a key still fails loudly, as with a normal dict.</p>
+<p><strong>Actually:</strong> a plain dict would raise <code>KeyError</code>, but <code>defaultdict</code> silently creates the misspelled key. This is the biggest trade-off of the tool.</p>
+<pre><code>d = defaultdict(int)
+d['totl'] += 1
+d['total'] += 1
+d    # defaultdict(int, {'totl': 1, 'total': 1})   (two keys, one a typo)</code></pre></div>
+
+<div class="pitfall"><p class="think">You might think</p>
+<p>The "default" behaviour stays attached when you pass the dict on.</p>
+<p><strong>Actually:</strong> it is still a <code>defaultdict</code> wherever it goes, so downstream code that reads a missing key keeps inserting. Convert with <code>dict(d)</code> when you are done building and want normal dict behaviour (also cleaner when printing or serialising).</p>
+<pre><code>d = defaultdict(list); d['a'].append(1)
+dict(d)   # {'a': [1]}</code></pre></div>
+
+<h2>5. More practice: pitfalls as questions</h2>
+<div class="quiz" data-answer="3" data-explain="The first argument must be a callable (or None), so the error is a TypeError raised at creation.">
+<p class="q">What does <code>defaultdict(0)</code> do?</p>
+<button>Every key starts zero</button><button>Raises KeyError on reads</button><button>Silently ignores the zero</button><button>Raises TypeError at creation</button></div>
+
+<div class="quiz" data-answer="0" data-explain="The in operator never calls the factory, so nothing is inserted.">
+<p class="q">On an empty <code>d = defaultdict(int)</code>, what is <code>len(d)</code> after evaluating <code>'x' in d</code>?</p>
+<button>0</button><button>1</button><button>2</button><button>KeyError</button></div>
+
+<div class="quiz" data-answer="2" data-explain="defaultdict creates 'totl' with count 1 and says nothing. A plain dict would have raised KeyError.">
+<p class="q">With a <code>defaultdict(int)</code> holding <code>'total'</code>, what does <code>d['totl'] += 1</code> do?</p>
+<button>Raises a KeyError</button><button>Updates total anyway</button><button>Silently adds 'totl'</button><button>Ignores the line</button></div>
+
+<h2>6. Try it yourself</h2>
+<p>In a Python shell: group <code>['apple','avocado','banana','blueberry','cherry']</code> by first letter using <code>defaultdict(list)</code>. Then (a) find the letter with the most words, and (b) deliberately trigger the typo pitfall and spot it in the output. Send me your solution and I will review it.</p>
+
+<h2>7. Read this next</h2>
+<p>Primary source: <a href="https://docs.python.org/3/library/collections.html#defaultdict-objects">Python docs: defaultdict objects</a>. Reference: <a href="../reference/collections-cheatsheet.html">collections cheat sheet</a>.</p>
+<p class="note">Questions? Ask your teacher (me) anything: when to prefer <code>dict.setdefault</code>, how defaultdict and Counter differ, anything unclear.</p>
+</main><script src="../assets/quiz.js"></script></body></html>

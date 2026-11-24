@@ -1,0 +1,27 @@
+:root{--ink:#1d1d1f;--muted:#6b6b70;--rule:#e4e2dc;--bg:#fbfaf7;--accent:#2f5d8a;--ok:#2e7d4f;--bad:#b3402f;--warn:#a8691a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.6 Georgia,"Iowan Old Style",serif}
+main{max-width:42rem;margin:0 auto;padding:3rem 1.25rem 5rem}
+h1{font-size:2rem;line-height:1.2;margin:.2rem 0 .5rem}
+h2{font-size:1.2rem;margin:2.2rem 0 .5rem;border-top:1px solid var(--rule);padding-top:1.2rem}
+h3{font-size:1rem;margin:1.4rem 0 .3rem}
+.kicker{font:600 .75rem/1 system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.lede{color:var(--muted)}
+code,pre{font-family:ui-monospace,Consolas,monospace;font-size:.9rem}
+pre{background:#f1efe9;padding:.9rem 1rem;overflow:auto;border-left:3px solid var(--accent)}
+code{background:#f1efe9;padding:.05em .3em}
+pre code{background:none;padding:0}
+a{color:var(--accent)}
+.note{font:.9rem/1.5 system-ui,sans-serif;color:var(--muted);border-top:1px solid var(--rule);margin-top:3rem;padding-top:1rem}
+.pitfall{margin:1.2rem 0;padding:.8rem 1.1rem;border-left:4px solid var(--warn);background:#fdf6ea}
+.pitfall .think{font:600 .75rem/1.4 system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);margin:0 0 .2rem}
+.pitfall p{margin:.3rem 0}
+.pitfall pre{background:#f7ecd8;border-left-color:var(--warn)}
+.quiz{margin:1.5rem 0;padding:1rem 1.2rem;border:1px solid var(--rule);background:#fff}
+.quiz .q{font-weight:bold;margin:0 0 .6rem}
+.quiz button{display:block;width:100%;text-align:left;margin:.35rem 0;padding:.5rem .7rem;font:.95rem ui-monospace,Consolas,monospace;background:#fff;border:1px solid var(--rule);cursor:pointer}
+.quiz button:hover:not(:disabled){border-color:var(--accent)}
+.quiz button.right{border-color:var(--ok);background:#eaf5ee}
+.quiz button.wrong{border-color:var(--bad);background:#fbecea}
+.quiz .fb{font:.9rem/1.5 system-ui,sans-serif;margin:.6rem 0 0;min-height:1.4em}
+@media print{body{background:#fff;font-size:12pt}.quiz button{border:1px solid #999}}

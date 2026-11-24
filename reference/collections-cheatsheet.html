@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Collections cheat sheet</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body><main>
+<div class="kicker">Reference</div><h1>Collections cheat sheet</h1>
+<p class="lede">Grows with each lesson. Source: <a href="https://docs.python.org/3/library/collections.html">Python docs</a>.</p>
+
+<h2>Counter</h2>
+<p>dict subclass for counting hashable objects. Missing key gives 0 and is not inserted.</p>
+<pre><code>c = Counter(iterable)
+c[x]               # count of x (0 if absent)
+c.most_common(n)   # top n as [(item, count), ...]
+c.update(other)    # ADDS counts (dict.update replaces)
+a + b              # adds counts
+a - b              # keeps only positive results
++c                 # drops zero and negative</code></pre>
+<div class="pitfall"><p class="think">Pitfalls</p>
+<p>Counter("text") counts characters; use .split() for words. Counts can reach 0 or go negative and the key stays. most_common() returns a list of tuples.</p></div>
+
+<h2>defaultdict</h2>
+<p>dict subclass that calls a factory to supply missing values. d[key] on a missing key inserts it.</p>
+<pre><code>g = defaultdict(list)   # group items
+g[key].append(item)
+n = defaultdict(int)    # count, starts at 0
+s = defaultdict(set)    # group unique items
+t = defaultdict(lambda: defaultdict(int))   # nested
+dict(g)                 # back to a normal dict</code></pre>
+<div class="pitfall"><p class="think">Pitfalls</p>
+<p>Reading d[k] inserts k; in and get() do not. Pass a callable (list, int, lambda), never a value like 0 or []. Typos in keys silently create new keys.</p></div>
+
+<p class="note">Next up: deque, namedtuple.</p>
+</main></body></html>

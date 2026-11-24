@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lesson 1: Counting with Counter</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body><main>
+<div class="kicker">Python Collections · Lesson 1</div>
+<h1>Counting things with <code>Counter</code></h1>
+<p class="lede">Mission link: before any model sees your data, you will count labels, tokens and categories. Today's win: count and rank anything in one line, and avoid the traps that bite people in interviews and code review.</p>
+
+<h2>1. The problem you already know</h2>
+<p>With a plain dict you count like this:</p>
+<pre><code>counts = {}
+for label in labels:
+    if label in counts:
+        counts[label] += 1
+    else:
+        counts[label] = 1</code></pre>
+<p>It works, but it is five lines of bookkeeping for one idea. The docs describe <code>Counter</code> as a <em>"dict subclass for counting hashable objects"</em> (<a href="https://docs.python.org/3/library/collections.html#counter-objects">docs</a>).</p>
+
+<h2>2. The knowledge</h2>
+<pre><code>from collections import Counter
+
+labels = ['cat', 'dog', 'cat', 'bird', 'cat', 'dog']
+c = Counter(labels)
+c                # Counter({'cat': 3, 'dog': 2, 'bird': 1})
+c['bird']        # 1
+c['bacon']       # 0   (missing keys give 0, not KeyError)
+c.most_common(2) # [('cat', 3), ('dog', 2)]</code></pre>
+<p>Keep three facts: it <em>is</em> a <code>dict</code>; a missing key counts as zero; <code>most_common(n)</code> returns the top <code>n</code> as (item, count) pairs, most frequent first. With no argument it returns all of them.</p>
+
+<h3>Other ways to build one</h3>
+<pre><code>Counter('abracadabra')      # from any iterable
+Counter(cat=3, dog=2)       # from keyword arguments
+Counter({'cat': 3})         # from a mapping</code></pre>
+
+<h3>Counters can be added and subtracted</h3>
+<pre><code>Counter(a=3, b=1) + Counter(a=1, b=2)   # Counter({'a': 4, 'b': 3})
+Counter(a=3, b=1) - Counter(a=1, b=2)   # Counter({'a': 2})</code></pre>
+<p>Useful for merging counts from two data shards. Note what happened to <code>b</code> in the subtraction: see pitfall 5 below.</p>
+
+<h2>3. Practice: recall before you re-read</h2>
+<div class="quiz" data-answer="2" data-explain="Counter returns 0 for missing keys.">
+<p class="q">What does <code>Counter('abracadabra')['z']</code> give?</p>
+<button>A KeyError exception</button><button>The value None</button><button>The integer zero</button><button>An empty list</button></div>
+
+<div class="quiz" data-answer="1" data-explain="'cat' appears 3 times, the most of any label.">
+<p class="q">With <code>labels</code> above, what is <code>Counter(labels).most_common(1)</code>?</p>
+<button>[('dog', 2)]</button><button>[('cat', 3)]</button><button>[('bird', 1)]</button><button>[('cat', 2)]</button></div>
+
+<div class="quiz" data-answer="3" data-explain="Counter subclasses dict, so dict methods like keys() and items() work.">
+<p class="q">Counter is a subclass of which built-in type?</p>
+<button>set</button><button>list</button><button>tuple</button><button>dict</button></div>
+
+<h2>4. Misconceptions and pitfalls</h2>
+<p>Each card is a belief that feels reasonable and is wrong. I ran every example below to confirm it.</p>
+
+<div class="pitfall"><p class="think">You might think</p>
+<p><code>Counter("the cat")</code> counts the words.</p>
+<p><strong>Actually:</strong> a string is an iterable of characters, so Counter counts characters. Split first.</p>
+<pre><code>Counter("the cat")           # Counter({'t': 2, 'h': 1, 'e': 1, ' ': 1, 'c': 1, 'a': 1})
+Counter("the cat".split())   # Counter({'the': 1, 'cat': 1})</code></pre></div>
+
+<div class="pitfall"><p class="think">You might think</p>
+<p>Reading <code>c['z']</code> adds <code>'z'</code> to the Counter (like you will see with <code>defaultdict</code> next lesson).</p>
+<p><strong>Actually:</strong> reading a missing key returns 0 and does <em>not</em> insert it.</p>
+<pre><code>c = Counter('abracadabra')
+c['z']        # 0
+'z' in c      # False
+len(c)        # 5</code></pre></div>
+
+<div class="pitfall"><p class="think">You might think</p>
+<p><code>c.update(...)</code> replaces counts, like <code>dict.update</code>.</p>
+<p><strong>Actually:</strong> on a Counter, update <em>adds</em> to the existing counts.</p>
+<pre><code>c = Counter(a=3); c.update(a=2, b=1)
+c                      # Counter({'a': 5, 'b': 1})
+d = {'a': 3}; d.update({'a': 2})
+d                      # {'a': 2}   (dict replaces)</code></pre></div>
+
+<div class="pitfall"><p class="think">You might think</p>
+<p>A count that drops to zero removes the key, and counts can never be negative.</p>
+<p><strong>Actually:</strong> the key stays, and negatives are allowed. The docs say counts "are allowed to be any integer value including zero or negative counts."</p>
+<pre><code>c = Counter(a=1)
+c['a'] -= 1
+c                  # Counter({'a': 0})
+'a' in c           # True
+c['b'] -= 2
+c                  # Counter({'a': 0, 'b': -2})
+list(c.elements()) # []      (elements() skips non-positive counts)
++c                 # Counter()   (unary + drops zero and negative)</code></pre></div>
+
+<div class="pitfall"><p class="think">You might think</p>
+<p>Subtracting two Counters keeps negative results, like plain arithmetic.</p>
+<p><strong>Actually:</strong> the <code>-</code> operator keeps only positive counts. To keep negatives use <code>c.subtract(other)</code>.</p>
+<pre><code>Counter(a=3, b=1) - Counter(a=1, b=2)   # Counter({'a': 2})   (b vanished)</code></pre></div>
+
+<div class="pitfall"><p class="think">You might think</p>
+<p><code>most_common()</code> returns a dict or Counter, so you can index it by label.</p>
+<p><strong>Actually:</strong> it returns a <em>list of tuples</em>. Use <code>dict(c.most_common(3))</code> if you need a dict. For ties, my run on Python 3.14 listed items in first-seen order: <code>Counter('bba').most_common()</code> gave <code>[('b', 2), ('a', 1)]</code>. Do not rely on tie order without checking the docs.</p></div>
+
+<h2>5. More practice: pitfalls as questions</h2>
+<div class="quiz" data-answer="0" data-explain="A string iterates over characters; call .split() to count words.">
+<p class="q">What does <code>Counter("the cat")</code> count?</p>
+<button>Each single character</button><button>Each separate word</button><button>Each whole line</button><button>Each unique phrase</button></div>
+
+<div class="quiz" data-answer="1" data-explain="Reading a missing key returns 0 but never inserts it.">
+<p class="q">After <code>c = Counter()</code> then <code>c['z']</code>, is <code>'z'</code> in <code>c</code>?</p>
+<button>Yes, it gets added</button><button>No, it stays absent</button><button>Yes, with count zero</button><button>Only after calling update</button></div>
+
+<div class="quiz" data-answer="2" data-explain="Counter.update adds counts: 3 + 2 = 5.">
+<p class="q">With <code>c = Counter(a=3)</code>, what does <code>c.update(a=2)</code> leave for <code>a</code>?</p>
+<button>a becomes 2</button><button>a becomes 3</button><button>a becomes 5</button><button>a becomes 1</button></div>
+
+<div class="quiz" data-answer="3" data-explain="The - operator drops results that are zero or negative. Only a is left.">
+<p class="q">What is <code>Counter(a=3, b=1) - Counter(a=1, b=2)</code>?</p>
+<button>{'a': 2, 'b': 1}</button><button>{'a': 4, 'b': 3}</button><button>{'a': 2, 'b': -1}</button><button>{'a': 2}</button></div>
+
+<h2>6. Try it yourself</h2>
+<p>In a Python shell: take the sentence <code>"the cat saw the dog and the cat ran"</code>, find the two most common words, then merge in a second Counter from <code>"the dog ran"</code>. Predict each output <em>before</em> you run it, and tell me where your prediction was wrong.</p>
+
+<h2>7. Read this next</h2>
+<p>Primary source: <a href="https://docs.python.org/3/library/collections.html#counter-objects">Python docs: Counter objects</a>. Reference: <a href="../reference/collections-cheatsheet.html">collections cheat sheet</a>. Next: <a href="0002-grouping-with-defaultdict.html">Lesson 2: Grouping with defaultdict</a>.</p>
+<p class="note">Stuck or curious? Ask your teacher (me) any follow-up question: how Counter ties are ordered, how it compares to a plain dict, anything unclear.</p>
+</main><script src="../assets/quiz.js"></script></body></html>
